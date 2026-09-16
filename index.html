@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>마라톤 훈련 페이스 계산기</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#fff; --text:#152033; --muted:#667085;
+  --navy:#0a356d; --blue:#1559a6; --teal:#087a77; --orange:#ef7b00;
+  --purple:#7745a0; --pink:#d62d59; --border:#d9e1ec; --shadow:0 8px 24px rgba(14,42,80,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+header{background:linear-gradient(135deg,#092d60,#0d4d8c);color:#fff;padding:22px 16px}
+header h1{margin:0;font-size:clamp(22px,4vw,34px)}
+header p{margin:8px 0 0;opacity:.9}
+.wrap{max-width:1220px;margin:auto;padding:16px}
+.home{min-height:75vh;display:grid;place-items:center}
+.homebox{width:min(820px,100%);background:#fff;border-radius:22px;padding:28px;box-shadow:var(--shadow)}
+.homebox h2{margin:0 0 8px;font-size:26px}
+.homebox p{margin:0 0 22px;color:var(--muted)}
+.modegrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modebtn{border:1px solid var(--border);background:#fff;border-radius:18px;padding:24px;text-align:left;cursor:pointer;transition:.2s}
+.modebtn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.modebtn b{display:block;font-size:22px;margin-bottom:6px;color:#0b3b78}
+.modebtn span{color:var(--muted);line-height:1.5}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.topbar h2{margin:0}
+.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:800;cursor:pointer}
+.primary{background:#0d4b87;color:#fff}
+.secondary{background:#e8eef7;color:#17395e}
+.danger{background:#fce8ec;color:#a9213d}
+.input-card,.group-card{background:#fff;border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+label{font-size:13px;font-weight:800;display:block;margin-bottom:6px;color:#3b4658}
+input[type="number"],input[type="text"],select{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.time-inputs{display:flex;gap:8px}.time-inputs>*{flex:1}
+.checkbox{display:flex;gap:8px;align-items:center;padding:11px;border:1px solid var(--border);border-radius:10px;background:#fbfcfe}
+.summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:16px}
+.metric{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:12px}
+.metric b{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.metric strong{font-size:18px}
+.section{background:#fff;border-radius:16px;box-shadow:var(--shadow);margin:16px 0;overflow:hidden}
+.section h2{margin:0;padding:13px 16px;color:#fff;font-size:19px}
+.navy h2{background:var(--navy)} .teal h2{background:var(--teal)} .orange h2{background:var(--orange)}
+.purple h2{background:var(--purple)} .pink h2{background:var(--pink)}
+.content{padding:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sub{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+.sub h3{font-size:15px;margin:0;padding:10px 12px;background:#f2f6fb}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #e7ebf1;padding:9px 8px;text-align:left;vertical-align:top}
+th{background:#f8fafc;font-size:12px}
+tr:last-child td{border-bottom:0}
+.value{font-weight:800;color:#0b3b78}
+.note{font-size:12px;color:var(--muted);line-height:1.55}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.group-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.grow{display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;align-items:end;padding:10px;border:1px solid var(--border);border-radius:12px;background:#fbfcfe}
+.grow .gname input{font-weight:800}
+.grow label{font-size:11px}
+.group-env{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+.group-result{margin-top:18px}
+.group-block{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:16px 0;box-shadow:0 4px 14px rgba(14,42,80,.05)}
+.group-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(90deg,#0b3b78,#1559a6);color:#fff}
+.group-head h3{margin:0;font-size:20px}
+.group-head span{font-weight:800}
+.group-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:12px;background:#f8fbff}
+.group-summary .metric{padding:10px;background:#fff}
+.group-sections{padding:14px}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef4fb;color:#0b3b78;font-size:12px;font-weight:800}
+.group-overview{overflow:auto}
+.group-overview table{min-width:900px}
+@media(max-width:900px){
+  .input-grid,.summary,.grid2,.grid3,.group-inputs,.group-env,.group-summary{grid-template-columns:1fr}
+  .modegrid{grid-template-columns:1fr}
+  .grow{grid-template-columns:1fr}
+}
+@media print{
+  header,.actions,.topbar .secondary,.home{display:none!important}
+  body{background:#fff}.wrap{max-width:none;padding:0}.section,.group-card,.group-block,.input-card{box-shadow:none;break-inside:avoid}
+}
+
+.share-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 14px 0}
+.share-tools select{max-width:260px}
+.share-card{
+  width:1080px;background:#fff;color:#152033;padding:34px;border-radius:24px;
+  font-family:system-ui,-apple-system,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+}
+.share-card .share-title{
+  background:linear-gradient(135deg,#092d60,#0d4d8c);color:#fff;
+  padding:22px 26px;border-radius:18px;margin-bottom:18px
+}
+.share-card .share-title h1{margin:0;font-size:38px}
+.share-card .share-title p{margin:8px 0 0;font-size:22px;opacity:.92}
+.share-card .share-meta{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px
+}
+.share-card .share-meta div{
+  border:1px solid #d9e1ec;border-radius:12px;padding:12px;background:#f8fafc
+}
+.share-card .share-meta b{display:block;font-size:15px;color:#667085;margin-bottom:4px}
+.share-card .share-meta strong{font-size:23px}
+.share-card .share-body{border:1px solid #d9e1ec;border-radius:16px;overflow:hidden}
+.share-card .share-body h3{margin:0;padding:14px 16px;background:#eef4fb;font-size:22px}
+.share-card .share-body table{font-size:18px}
+.share-card .share-body th,.share-card .share-body td{padding:12px 10px}
+.share-card .share-footer{margin-top:14px;font-size:15px;color:#667085;text-align:right}
+#shareStage{position:fixed;left:-99999px;top:0;z-index:-1}
+
+
+/* 조별 빠른 기록 입력 */
+.group-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grow.quick{
+  display:grid;grid-template-columns:90px minmax(120px,1fr) 44px;
+  gap:8px;align-items:end
+}
+.grow.quick .record4{font-size:19px;font-weight:850;letter-spacing:1px;text-align:center}
+.grow.quick .remove-group{padding:11px 6px;background:#fff0f2;color:#b4233d;border:1px solid #f5c4ce}
+.group-share-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.group-share-bar select{min-width:240px;max-width:420px}
+.all-groups-share-card{
+  width:1080px;background:#fff;color:#152033;padding:34px;border-radius:24px;
+  font-family:system-ui,-apple-system,"Noto Sans KR","Apple SD Gothic Neo",sans-serif
+}
+.all-groups-share-card .title{
+  background:linear-gradient(135deg,#092d60,#0d4d8c);color:#fff;
+  padding:22px 26px;border-radius:18px;margin-bottom:16px
+}
+.all-groups-share-card .title h1{margin:0;font-size:38px}
+.all-groups-share-card .title p{margin:8px 0 0;font-size:20px;opacity:.92}
+.all-groups-share-card table{font-size:20px}
+.all-groups-share-card th,.all-groups-share-card td{padding:14px 10px}
+.all-groups-share-card th{font-size:17px;background:#eef4fb}
+.all-groups-share-card .envline{
+  padding:11px 14px;margin-bottom:14px;border:1px solid #d9e1ec;border-radius:12px;background:#f8fafc;font-size:18px
+}
+@media(max-width:900px){
+  .group-inputs{grid-template-columns:1fr}
+  .grow.quick{grid-template-columns:78px minmax(110px,1fr) 42px}
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>마라톤 훈련 페이스 계산기</h1>
+  <p>개인별 계산 · 조별 계산</p>
+</header>
+
+<div class="wrap">
+
+  <section id="home" class="home">
+    <div class="homebox">
+      <h2>계산 방식을 선택하세요</h2>
+      <p>개인 한 명을 계산하거나, 여러 조의 10km 기록을 한 번에 입력해 전체 훈련표를 조별로 확인할 수 있습니다.</p>
+      <div class="modegrid">
+        <button class="modebtn" onclick="openMode('personal')">
+          <b>개인별 계산</b>
+          <span>10km 기록 1개 입력 → 기존 전체 훈련 프로그램 자동 계산</span>
+        </button>
+        <button class="modebtn" onclick="openMode('group')">
+          <b>조별 계산</b>
+          <span>1조~6조 10km 기록 입력 → 각 조의 전체 훈련 프로그램을 한 화면에 정리</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <main id="personalMode" class="hidden">
+    <div class="topbar">
+      <h2>개인별 계산</h2>
+      <button class="btn secondary" onclick="goHome()">처음 화면</button>
+    </div>
+
+    <div class="input-card">
+      <div class="input-grid">
+        <div>
+          <label>10km 기록</label>
+          <div class="time-inputs">
+            <input id="min" type="number" min="20" max="99" value="40">
+            <input id="sec" type="number" min="0" max="59" value="0">
+          </div>
+        </div>
+        <div>
+          <label>현재 기온 (℃)</label>
+          <input id="tempC" type="number" min="-20" max="50" step="0.1" value="20">
+        </div>
+        <div>
+          <label>현재 상대습도 (%)</label>
+          <input id="rh" type="number" min="1" max="100" step="1" value="60">
+        </div>
+        <div><button class="btn primary" onclick="calcPersonal()">전체 계산</button></div>
+      </div>
+
+      <div class="summary">
+        <div class="metric"><b>10km 기준 페이스</b><strong id="basePace">-</strong></div>
+        <div class="metric"><b>훈련 보정 페이스</b><strong id="trainPace">-</strong></div>
+        <div class="metric"><b>하프 예상</b><strong id="halfPred">-</strong></div>
+        <div class="metric"><b>풀 예상</b><strong id="fullPred">-</strong></div>
+        <div class="metric"><b>LT 기준 페이스</b><strong id="ltTop">-</strong></div>
+        <div class="metric"><b>자동 환경 보정</b><strong id="envAdj">-</strong><span id="dewInfo" class="note"></span></div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" onclick="window.print()">인쇄 / PDF 저장</button>
+        <button class="btn secondary" onclick="resetPersonalEnv()">환경 보정 초기화</button>
+      </div>
+      <div id="envExplain" class="note" style="margin-top:12px;padding:12px;background:#f7f9fc;border:1px solid var(--border);border-radius:10px"></div>
+      <p class="note">기온과 상대습도를 입력하면 이슬점(dew point)을 계산해 훈련 페이스를 자동 보정합니다. 레이스 예상 기록에는 환경 보정을 적용하지 않습니다. 고온·다습 시에는 페이스보다 체감강도·심박을 우선하세요.</p>
+    </div>
+
+    <section class="section navy"><h2>1. 레이스 예상 기록</h2><div class="content" id="race"></div></section>
+    <section class="section navy"><h2>2. 기본 인터벌 훈련</h2><div class="content grid2" id="basicIntervals"></div></section>
+    <section class="section teal"><h2>3. LT 크루즈 인터벌</h2><div class="content" id="ltCruise"></div></section>
+    <section class="section teal"><h2>4. 8000m LT주</h2><div class="content" id="tempo8k"></div></section>
+    <section class="section orange"><h2>5. 3000m / 2000m / 1000m 복합 인터벌</h2><div class="content" id="mixed"></div></section>
+    <section class="section orange"><h2>6. 수요일 인터벌 변형 훈련</h2><div class="content" id="wed"></div></section>
+    <section class="section purple"><h2>7. 빌드업 훈련</h2><div class="content grid2" id="buildup"></div></section>
+    <section class="section pink"><h2>8. 장거리 주말 훈련</h2><div class="content" id="longrun"></div></section>
+  </main>
+
+  <main id="groupMode" class="hidden">
+    <div class="topbar">
+      <h2>조별 계산</h2>
+      <button class="btn secondary" onclick="goHome()">처음 화면</button>
+    </div>
+
+    <div class="group-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <h3 style="margin:0">조별 10km 기록 입력</h3>
+          <p class="note" style="margin:5px 0 0">예: 41분 20초는 <b>4120</b>만 입력하면 됩니다.</p>
+        </div>
+        <button type="button" class="btn primary" id="addGroupBtn">＋ 조 추가</button>
+      </div>
+      <div id="groupInputs" class="group-inputs" style="margin-top:14px"></div>
+
+      <div class="group-env">
+        <div>
+          <label>훈련 기온 (℃)</label>
+          <input id="gTempC" type="number" min="-20" max="50" step="0.1" value="20">
+        </div>
+        <div>
+          <label>훈련 상대습도 (%)</label>
+          <input id="gRh" type="number" min="1" max="100" step="1" value="60">
+        </div>
+
+      </div>
+
+      <div id="gEnvInfo" class="note" style="margin-top:12px;padding:12px;background:#f7f9fc;border:1px solid var(--border);border-radius:10px"></div>
+      <div class="actions">
+        <button class="btn primary" onclick="calcGroups()">조별 전체 계산</button>
+        <button class="btn secondary" onclick="window.print()">인쇄 / PDF 저장</button>
+      </div>
+    </div>
+
+    <div id="groupSharePanel" class="section teal hidden">
+      <h2>훈련 종목별 조 전체 이미지</h2>
+      <div class="content">
+        <p class="note" style="margin-top:0">훈련 종목 하나를 선택하면 현재 입력된 모든 조가 1조부터 마지막 조까지 한 장에 정리됩니다.</p>
+        <div class="group-share-bar">
+          <select id="allGroupShareType">
+            <option value="basic300">300m / 100m</option>
+            <option value="basic400">400m / 200m</option>
+            <option value="basic800">800m / 200m</option>
+            <option value="basic1000">1000m / 200m</option>
+            <option value="lt3000">3000m × 3 크루즈</option>
+            <option value="lt">LT 크루즈 인터벌</option>
+            <option value="tempo">8000m LT주</option>
+            <option value="mixed">3000m / 2000m / 1000m 복합</option>
+            <option value="wed400">400m × 10</option>
+            <option value="wed1000">1000m × 5</option>
+            <option value="wed1200">1200m × 5</option>
+            <option value="wed1600">1600m × 5</option>
+            <option value="buildup12">12km 빌드업</option>
+            <option value="buildup20">20km 빌드업</option>
+            <option value="long18">18km 롱런</option>
+            <option value="long32">32km 롱런</option>
+          </select>
+          <button type="button" class="btn primary" id="saveAllGroupsImageBtn">이미지 저장</button>
+          <button type="button" class="btn secondary" id="shareAllGroupsImageBtn">공유하기</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="groupOverview" class="section navy hidden">
+      <h2>조별 핵심 요약</h2>
+      <div class="content group-overview" id="groupOverviewTable"></div>
+    </div>
+
+    <div id="groupResults" class="group-result"></div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const round = x => Math.round(x);
+function pace(sec){sec=Math.round(sec);let m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}/km`;}
+function t(sec){sec=Math.round(sec);let h=Math.floor(sec/3600);sec%=3600;let m=Math.floor(sec/60),s=sec%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`;}
+function lap(sec){return `${t(sec)} (${Math.round(sec)}초)`;}
+function mround(x,m){return Math.round(x/m)*m;}
+
+/* 환경 보정:
+   - Magnus 근사식으로 이슬점 계산
+   - 이슬점 기반의 보수적 훈련 페이스 보정
+   - 고온(건조한 더위 포함)은 30℃ 이상에서 소폭 추가 보정
+   주의: 단일한 국제 표준 '초/km 보정 공식'은 없으므로 안전 여유를 둔 실사용용 규칙이다.
+*/
+function dewPointC(tempC, rh){
+  rh=Math.max(1,Math.min(100,rh));
+  const a=17.625, b=243.04;
+  const gamma=Math.log(rh/100)+(a*tempC)/(b+tempC);
+  return (b*gamma)/(a-gamma);
+}
+function envAdjustment(tempC, rh){
+  const dp=dewPointC(tempC,rh);
+  let sec=0;
+  if(dp>=15 && dp<18) sec=5;
+  else if(dp>=18 && dp<21) sec=10;
+  else if(dp>=21 && dp<24) sec=15;
+  else if(dp>=24 && dp<26) sec=20;
+  else if(dp>=26) sec=25;
+
+  // 이슬점만으로 놓칠 수 있는 매우 뜨겁고 건조한 조건 보완
+  if(tempC>=30 && tempC<33) sec+=5;
+  else if(tempC>=33) sec+=10;
+
+  // 과도한 자동 보정을 막기 위한 상한
+  sec=Math.min(sec,35);
+
+  let level='쾌적';
+  if(sec>=25) level='매우 부담';
+  else if(sec>=15) level='부담 큼';
+  else if(sec>=5) level='보정 권장';
+
+  const highRisk = tempC>26.6 && rh>75;
+  return {sec, dp, level, highRisk};
+}
+function card(title,rows){
+  return `<div class="sub"><h3>${title}</h3><table><tbody>${
+    rows.map(r=>`<tr><th>${r[0]}</th><td class="value">${r[1]}</td>${r[2]!==undefined?`<td>${r[2]}</td>`:''}</tr>`).join('')
+  }</tbody></table></div>`;
+}
+function openMode(mode){
+  $('home').classList.add('hidden');
+  $('personalMode').classList.toggle('hidden',mode!=='personal');
+  $('groupMode').classList.toggle('hidden',mode!=='group');
+  if(mode==='personal') calcPersonal();
+  if(mode==='group') calcGroups();
+  window.scrollTo(0,0);
+}
+function goHome(){
+  $('personalMode').classList.add('hidden'); $('groupMode').classList.add('hidden'); $('home').classList.remove('hidden'); window.scrollTo(0,0);
+}
+function resetPersonalEnv(){ $('tempC').value='20'; $('rh').value='60'; calcPersonal(); }
+
+function dataFor(T1, env=0){
+  let p0=T1/10, p=p0+env;
+  let half=T1*Math.pow(21.0975/10,1.06), full=T1*Math.pow(42.195/10,1.06);
+
+  let s100=p/10-4, run300=s100*3;
+  let rec100=(p0/10)*2.05;
+  let offset=T1>3000?22:18;
+  let run400=mround((p-offset)*.4,2), rec200=round((p+75)*.2);
+  let run800=(p-8)*.8, rec800=(p+110)*.2;
+  let lt=p+10, ltRecP=p+85, ltRec=(p+85)*.2;
+  let mixRec100=(p+30)*.1;
+  let commonRec=(p+110)*.2;
+  let pyr=[400,800,1200,1600,1200,800,400];
+  let pyrText=pyr.map(d=>`${d}m ${t((p-5)*(d/1000))}`).join(' · ');
+
+  return {T1,p0,p,env,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText};
+}
+function renderAll(d){
+  let {T1,p0,p,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText}=d;
+
+  const race=`<table><thead><tr><th>항목</th><th>결과</th><th>계산</th></tr></thead><tbody>
+    <tr><td>10km 입력 기록</td><td class="value">${t(T1)}</td><td>기준</td></tr>
+    <tr><td>하프 예상 기록</td><td class="value">${t(half)}</td><td>Riegel 1.06</td></tr>
+    <tr><td>하프 예상 페이스</td><td class="value">${pace(half/21.0975)}</td><td>-</td></tr>
+    <tr><td>풀 예상 기록</td><td class="value">${t(full)}</td><td>Riegel 1.06</td></tr>
+    <tr><td>풀 예상 페이스</td><td class="value">${pace(full/42.195)}</td><td>-</td></tr>
+  </tbody></table>`;
+
+  const basic =
+    card('2-1. 300m / 100m',[
+      ['질주 100m 페이스',lap(s100),'10km 100m 페이스 -4초'],
+      ['300m 랩타임',lap(run300)],
+      ['질주 km 페이스',pace(p-40)],
+      ['휴식 100m 시간',lap(rec100),'10km 100m 환산초 × 2.05 · 환경보정 없음'],
+      ['휴식 km 페이스',pace(rec100*10)]
+    ])+
+    card('2-2. 400m / 200m',[
+      ['offset',`-${offset}초/km`,T1>3000?'10km 50분 초과':'10km 50분 이하'],
+      ['400m 질주 랩타임',lap(run400)],
+      ['질주 km 페이스',pace(run400*2.5)],
+      ['200m 휴식 시간',lap(rec200)],
+      ['휴식 km 페이스',pace(rec200*5)]
+    ])+
+    card('2-3. 800m / 200m',[
+      ['질주 km 페이스',pace(p-8)],
+      ['800m 랩타임',lap(run800)],
+      ['회복 km 페이스',pace(p+110)],
+      ['200m 회복 시간',lap(rec800)],
+      ['세트 수','6세트','5~8세트 가능']
+    ])+
+    card('2-4. 1000m / 200m',[
+      ['질주 km 페이스',pace(p-12)],
+      ['1000m 랩타임',lap(p-12)],
+      ['200m 휴식 시간',lap(((p/10)*2.05)*2)],
+      ['휴식 km 페이스',pace(((p/10)*2.05)*10)]
+    ]);
+
+  const ltCruise=`<div class="grid2">
+    ${card('공통 공식',[
+      ['LT 페이스',pace(lt),'10km 페이스 +10초/km'],
+      ['200m 휴식 km 페이스',pace(ltRecP)],
+      ['200m 휴식 시간',lap(ltRec)]
+    ])}
+    ${card('세트별 구성',[
+      ['3000m × 3',`${lap(lt*3)} × 3`,`총 LT ${t(lt*3*3)}`],
+      ['2000m × 5',`${lap(lt*2)} × 5`,`총 LT ${t(lt*2*5)}`],
+      ['1600m × 6',`${lap(lt*1.6)} × 6`,`총 LT ${t(lt*1.6*6)}`]
+    ])}
+  </div>`;
+
+  const tempo=card('8000m LT주',[
+    ['목표 페이스',pace(p+15),'HMP 전후'],
+    ['참고 범위',`${pace(p+12)} ~ ${pace(p+18)}`],
+    ['8km 완주 시간',t((p+15)*8)],
+    ['완주 시간 범위',`${t((p+12)*8)} ~ ${t((p+18)*8)}`]
+  ]);
+
+  const mixed=`<table><thead><tr><th>세그먼트</th><th>질주 km 페이스</th><th>질주 시간</th><th>휴식</th><th>휴식 페이스</th><th>휴식 시간</th></tr></thead><tbody>
+    <tr><td>3000m</td><td class="value">${pace(p+10)}</td><td>${t((p+10)*3)}</td><td>600m</td><td>${pace(p+30)}</td><td>${t(mixRec100*6)}</td></tr>
+    <tr><td>2000m</td><td class="value">${pace(p)}</td><td>${t(p*2)}</td><td>400m</td><td>${pace(p+30)}</td><td>${t(mixRec100*4)}</td></tr>
+    <tr><td>1000m</td><td class="value">${pace(p-10)}</td><td>${t(p-10)}</td><td>200m</td><td>${pace(p+30)}</td><td>${t(mixRec100*2)}</td></tr>
+  </tbody></table>`;
+
+  const wed=`<div class="grid3">
+    ${card('6-1. 400m × 10',[['질주 km 페이스',pace(p-8)],['400m 랩',lap((p-8)*.4)],['세트','10세트']])}
+    ${card('6-2. 1000m × 5',[['질주 km 페이스',pace(p)],['1000m 랩',lap(p)],['회복 200m',lap(commonRec)],['세트','5세트']])}
+    ${card('6-3. 1200m × 5',[['질주 km 페이스',pace(p)],['1200m 랩',lap(p*1.2)],['회복 200m',lap(commonRec)],['세트','5세트']])}
+    ${card('6-4. 1600m × 5',[['질주 km 페이스',pace(p+5)],['1600m 랩',lap((p+5)*1.6)],['회복 200m',lap(commonRec)],['세트','5세트']])}
+    ${card('6-5. 피라미드',[['구성','400-800-1200-1600-1200-800-400'],['질주 km 페이스',pace(p-5)],['각 구간',pyrText],['회복 200m',lap(commonRec)]])}
+    ${card('6-6. 400/400 변속주',[['빠른 400m',`${pace(p-5)} · ${t((p-5)*.4)}`],['느린 400m',`${pace(p+15)} ~ ${pace(p+20)}`],['세트','10세트']])}
+  </div>`;
+
+  const buildup=`<div class="grid2">
+    ${card('12km 빌드업',[
+      ['1~5km',pace(p+18)],
+      ['6~10km',pace(p+3)],
+      ['11km',pace(p-7)],
+      ['12km',pace(p-12)],
+      ['예상 총시간',t((p+18)*5+(p+3)*5+(p-7)+(p-12))]
+    ])}
+    ${card('20km 빌드업',[
+      ['1~10km',pace(p+20)],['11~15km',pace(p+10)],['16~20km',pace(p)],
+      ['예상 총시간',t((p+20)*10+(p+10)*5+p*5)]
+    ])}
+  </div>`;
+
+  const longrun=`<table><thead><tr><th>항목</th><th>페이스</th><th>예상 시간</th><th>설명</th></tr></thead><tbody>
+    <tr><td>18km 롱런</td><td class="value">${pace(p+20)} ~ ${pace(p+40)}</td><td>${t((p+20)*18)} ~ ${t((p+40)*18)}</td><td>지속주 강도</td></tr>
+    <tr><td>32km 롱런</td><td class="value">${pace(p+20)} ~ ${pace(p+40)}</td><td>${t((p+20)*32)} ~ ${t((p+40)*32)}</td><td>지속주 강도</td></tr>
+    <tr><td>마지막 5km 페이스업</td><td class="value">${pace(p)} ~ ${pace(p+10)}</td><td>-</td><td>점진적 상승</td></tr>
+  </tbody></table>`;
+
+  return {race,basic,ltCruise,tempo,mixed,wed,buildup,longrun};
+}
+
+function calcPersonal(){
+  let mm=Math.max(1,Number($('min').value)||0), ss=Math.min(59,Math.max(0,Number($('sec').value)||0));
+  let T1=mm*60+ss;
+  let e=envAdjustment(Number($('tempC').value)||20, Number($('rh').value)||60);
+  let env=e.sec;
+  let d=dataFor(T1,env), r=renderAll(d);
+  $('basePace').textContent=pace(d.p0); $('trainPace').textContent=pace(d.p);
+  $('halfPred').textContent=t(d.half); $('fullPred').textContent=t(d.full); $('ltTop').textContent=pace(d.lt);
+  $('envAdj').textContent=`+${e.sec}초/km`;
+  $('dewInfo').innerHTML=`<br>이슬점 ${e.dp.toFixed(1)}℃ · ${e.level}${e.highRisk?' · <span style="color:#b42318;font-weight:800">고온다습 주의</span>':''}`;
+  const tempNow=Number($('tempC').value)||20, rhNow=Number($('rh').value)||60;
+  $('envExplain').innerHTML=e.sec>0
+    ? `<b>환경 보정 설명</b><br>기온 ${tempNow.toFixed(1)}℃ · 습도 ${rhNow}% → 이슬점 ${e.dp.toFixed(1)}℃로 계산되어 <b>훈련 페이스를 1km당 ${e.sec}초 느리게 보정</b>했습니다.<br>예: 원래 10km 기준 페이스 ${pace(d.p0)} → 보정 후 ${pace(d.p)}`
+    : `<b>환경 보정 설명</b><br>기온 ${tempNow.toFixed(1)}℃ · 습도 ${rhNow}% → 이슬점 ${e.dp.toFixed(1)}℃로 계산되어 <b>추가 페이스 보정은 0초/km</b>입니다.<br>현재 입력 조건에서는 원래 훈련 페이스를 그대로 사용합니다.`;
+  $('race').innerHTML=r.race; $('basicIntervals').innerHTML=r.basic; $('ltCruise').innerHTML=r.ltCruise;
+  $('tempo8k').innerHTML=r.tempo; $('mixed').innerHTML=r.mixed; $('wed').innerHTML=r.wed;
+  $('buildup').innerHTML=r.buildup; $('longrun').innerHTML=r.longrun;
+}
+
+
+let groupRows=[
+  {name:'1조', record:'3815'},
+  {name:'2조', record:'4100'},
+  {name:'3조', record:'4200'},
+  {name:'4조', record:'4300'},
+  {name:'5조', record:'4515'},
+  {name:'6조', record:'5000'}
+];
+
+function normalizeRecord4(v){
+  return String(v||'').replace(/\D/g,'').slice(0,4);
+}
+function record4ToSeconds(v){
+  const s=normalizeRecord4(v);
+  if(s.length<3) return null;
+  const padded=s.padStart(4,'0');
+  const mm=Number(padded.slice(0,2));
+  const ss=Number(padded.slice(2,4));
+  if(mm<1 || ss>59) return null;
+  return mm*60+ss;
+}
+function secondsToRecord4(sec){
+  const mm=Math.floor(sec/60), ss=Math.round(sec%60);
+  return `${String(mm).padStart(2,'0')}${String(ss).padStart(2,'0')}`;
+}
+
+function buildGroupInputs(){
+  $('groupInputs').innerHTML=groupRows.map((g,i)=>`
+    <div class="grow quick">
+      <div class="gname">
+        <label>조 이름</label>
+        <input id="gname${i}" type="text" value="${g.name}">
+      </div>
+      <div>
+        <label>10km 기록 (예: 4120)</label>
+        <input id="grecord${i}" class="record4" type="text" inputmode="numeric"
+               maxlength="4" value="${g.record}" placeholder="4120">
+      </div>
+      <button type="button" class="btn remove-group" data-remove="${i}" title="이 조 삭제">×</button>
+    </div>`).join('');
+
+  groupRows.forEach((g,i)=>{
+    $('gname'+i).addEventListener('input',e=>{
+      groupRows[i].name=e.target.value;
+      calcGroups();
+    });
+    $('grecord'+i).addEventListener('input',e=>{
+      e.target.value=normalizeRecord4(e.target.value);
+      groupRows[i].record=e.target.value;
+      calcGroups();
+    });
+  });
+
+  document.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=Number(btn.dataset.remove);
+      if(groupRows.length<=1){ alert('최소 1개 조는 남겨야 합니다.'); return; }
+      groupRows.splice(idx,1);
+      groupRows.forEach((g,j)=>{ if(/^\\d+조$/.test(g.name)) g.name=`${j+1}조`; });
+      buildGroupInputs();
+      calcGroups();
+    });
+  });
+}
+
+function addGroup(){
+  const n=groupRows.length+1;
+  const last=groupRows[groupRows.length-1];
+  let next='5000';
+  if(last){
+    const sec=record4ToSeconds(last.record);
+    if(sec) next=secondsToRecord4(sec+120);
+  }
+  groupRows.push({name:`${n}조`,record:next});
+  buildGroupInputs();
+  calcGroups();
+  setTimeout(()=>{
+    const el=$('grecord'+(groupRows.length-1));
+    if(el){ el.focus(); el.select(); }
+  },50);
+}
+
+function getCurrentGroups(){
+  let ge=envAdjustment(Number($('gTempC').value)||20, Number($('gRh').value)||60);
+  let groups=[];
+  groupRows.forEach((row,i)=>{
+    const T1=record4ToSeconds(row.record);
+    if(!T1) return;
+    const name=(row.name||`${i+1}조`).trim()||`${i+1}조`;
+    const d=dataFor(T1,ge.sec);
+    groups.push({name,d,r:renderAll(d)});
+  });
+  return {groups, ge};
+}
+
+function calcGroups(){
+  const gt=Number($('gTempC').value)||20, grh=Number($('gRh').value)||60;
+  const {groups, ge}=getCurrentGroups();
+
+  $('gEnvInfo').innerHTML=ge.sec>0
+    ? `<b>환경 보정 설명</b><br>기온 ${gt.toFixed(1)}℃ · 습도 ${grh}% → 이슬점 ${ge.dp.toFixed(1)}℃로 계산되어 <b>모든 조의 훈련 페이스를 1km당 ${ge.sec}초 느리게 보정</b>했습니다. · ${ge.level}${ge.highRisk?' · <span style="color:#b42318;font-weight:800">고온다습 조건: 강도 하향 또는 시간대 변경 권장</span>':''}`
+    : `<b>환경 보정 설명</b><br>기온 ${gt.toFixed(1)}℃ · 습도 ${grh}% → 이슬점 ${ge.dp.toFixed(1)}℃로 계산되어 <b>자동 환경 보정은 0초/km</b>입니다.`;
+
+  const has=groups.length>0;
+  $('groupOverview').classList.toggle('hidden',!has);
+  $('groupSharePanel').classList.toggle('hidden',!has);
+  if(!has){ $('groupResults').innerHTML=''; return; }
+
+  $('groupOverviewTable').innerHTML=`<table><thead><tr>
+    <th>조</th><th>10km 기록</th><th>원래 페이스</th><th>보정 후 훈련 페이스</th><th>300m 질주</th><th>100m 휴식</th>
+    <th>400m 질주</th><th>800m 질주</th><th>1000m 질주</th><th>LT</th><th>8km LT주</th>
+  </tr></thead><tbody>${
+    groups.map(g=>`<tr>
+      <td><b>${g.name}</b></td><td class="value">${t(g.d.T1)}</td><td>${pace(g.d.p0)}</td><td class="value">${pace(g.d.p)}</td>
+      <td class="value">${t(g.d.run300)}</td><td>${t(g.d.rec100)}</td>
+      <td>${t(g.d.run400)}</td><td>${t(g.d.run800)}</td><td>${t(g.d.p-12)}</td>
+      <td>${pace(g.d.lt)}</td><td>${t((g.d.p+15)*8)}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+
+  // 상세표는 기존과 동일하되, 개별 조 이미지 버튼은 제거
+  $('groupResults').innerHTML=groups.map(g=>`
+    <section class="group-block">
+      <div class="group-head">
+        <h3>${g.name}</h3>
+        <span>10km ${t(g.d.T1)} · 원래 ${pace(g.d.p0)} · 보정 후 ${pace(g.d.p)}</span>
+      </div>
+      <div class="group-summary">
+        <div class="metric"><b>10km</b><strong>${t(g.d.T1)}</strong></div>
+        <div class="metric"><b>원래 페이스</b><strong>${pace(g.d.p0)}</strong></div>
+        <div class="metric"><b>보정 후 페이스</b><strong>${pace(g.d.p)}</strong></div>
+        <div class="metric"><b>300m 질주</b><strong>${t(g.d.run300)}</strong></div>
+        <div class="metric"><b>100m 휴식</b><strong>${t(g.d.rec100)}</strong></div>
+        <div class="metric"><b>400m 질주</b><strong>${t(g.d.run400)}</strong></div>
+        <div class="metric"><b>하프 예상</b><strong>${t(g.d.half)}</strong></div>
+        <div class="metric"><b>풀 예상</b><strong>${t(g.d.full)}</strong></div>
+      </div>
+      <div class="group-sections">
+        <div class="sub"><h3>1. 레이스 예상 기록</h3>${g.r.race}</div><br>
+        <div class="sub"><h3>2. 기본 인터벌 훈련</h3><div class="grid2" style="padding:12px">${g.r.basic}</div></div><br>
+        <div class="sub"><h3>3. LT 크루즈 인터벌</h3><div style="padding:12px">${g.r.ltCruise}</div></div><br>
+        <div class="sub"><h3>4. 8000m LT주</h3><div style="padding:12px">${g.r.tempo}</div></div><br>
+        <div class="sub"><h3>5. 복합 인터벌</h3><div style="padding:12px">${g.r.mixed}</div></div><br>
+        <div class="sub"><h3>6. 수요일 인터벌 변형</h3><div style="padding:12px">${g.r.wed}</div></div><br>
+        <div class="sub"><h3>7. 빌드업</h3><div style="padding:12px">${g.r.buildup}</div></div><br>
+        <div class="sub"><h3>8. 장거리 주말 훈련</h3><div style="padding:12px">${g.r.longrun}</div></div>
+      </div>
+    </section>`).join('');
+}
+
+function allGroupRowsByType(type, groups){
+  const rows=[];
+  for(const g of groups){
+    const d=g.d;
+    if(type==='basic300'){
+      rows.push([g.name,t(d.T1),t(d.run300),t(d.rec100),pace(d.p-40),pace(d.rec100*10)]);
+    }else if(type==='basic400'){
+      rows.push([g.name,t(d.T1),t(d.run400),t(d.rec200),pace(d.run400*2.5),pace(d.rec200*5)]);
+    }else if(type==='basic800'){
+      rows.push([g.name,t(d.T1),t(d.run800),t(d.rec800),pace(d.p-8),pace(d.p+110)]);
+    }else if(type==='basic1000'){
+      const rec=((d.p/10)*2.05)*2;
+      rows.push([g.name,t(d.T1),t(d.p-12),t(rec),pace(d.p-12),pace(rec*5)]);
+    }else if(type==='lt3000'){
+      rows.push([g.name,t(d.T1),pace(d.lt),t(d.lt*3),'3세트',t(d.lt*3*3)]);
+    }else if(type==='lt'){
+      rows.push([g.name,t(d.T1),pace(d.lt),t(d.lt*3),t(d.lt*2),t(d.lt*1.6)]);
+    }else if(type==='tempo'){
+      rows.push([g.name,t(d.T1),pace(d.p+15),t((d.p+15)*8),`${pace(d.p+12)} ~ ${pace(d.p+18)}`,'-']);
+    }else if(type==='mixed'){
+      rows.push([g.name,t(d.T1),`${t((d.p+10)*3)}`,`${t(d.p*2)}`,`${t(d.p-10)}`,pace(d.p+30)]);
+    }else if(type==='wed400'){
+      rows.push([g.name,t(d.T1),t((d.p-8)*.4),t(d.commonRec),pace(d.p-8),pace(d.p+110)]);
+    }else if(type==='wed1000'){
+      rows.push([g.name,t(d.T1),t(d.p),t(d.commonRec),pace(d.p),pace(d.p+110)]);
+    }else if(type==='wed1200'){
+      rows.push([g.name,t(d.T1),t(d.p*1.2),t(d.commonRec),pace(d.p),pace(d.p+110)]);
+    }else if(type==='wed1600'){
+      rows.push([g.name,t(d.T1),t((d.p+5)*1.6),t(d.commonRec),pace(d.p+5),pace(d.p+110)]);
+    }else if(type==='buildup12'){
+      rows.push([
+        g.name,t(d.T1),
+        pace(d.p+18),pace(d.p+3),pace(d.p-7),pace(d.p-12),
+        t((d.p+18)*5+(d.p+3)*5+(d.p-7)+(d.p-12))
+      ]);
+    }else if(type==='buildup20'){
+      rows.push([g.name,t(d.T1),pace(d.p+20),pace(d.p+10),pace(d.p),t((d.p+20)*10+(d.p+10)*5+d.p*5)]);
+    }else if(type==='long18'){
+      rows.push([g.name,t(d.T1),`${pace(d.p+20)} ~ ${pace(d.p+40)}`,`${t((d.p+20)*18)} ~ ${t((d.p+40)*18)}`,`${pace(d.p)} ~ ${pace(d.p+10)}`,'-']);
+    }else if(type==='long32'){
+      rows.push([g.name,t(d.T1),`${pace(d.p+20)} ~ ${pace(d.p+40)}`,`${t((d.p+20)*32)} ~ ${t((d.p+40)*32)}`,`${pace(d.p)} ~ ${pace(d.p+10)}`,'-']);
+    }
+  }
+  return rows;
+}
+
+function allGroupTypeMeta(type){
+  const map={
+    basic300:['300m / 100m 인터벌',['조','10km','300m 질주','100m 휴식','질주 km','회복 km']],
+    basic400:['400m / 200m 인터벌',['조','10km','400m 질주','200m 휴식','질주 km','회복 km']],
+    basic800:['800m / 200m 인터벌',['조','10km','800m 질주','200m 휴식','질주 km','회복 km']],
+    basic1000:['1000m / 200m 인터벌',['조','10km','1000m 질주','200m 휴식','질주 km','회복 km']],
+    lt3000:['3000m × 3 크루즈',['조','10km','LT 페이스','3000m 랩','세트','총 LT 시간']],
+    lt:['LT 크루즈 인터벌',['조','10km','LT 페이스','3000m','2000m','1600m']],
+    tempo:['8000m LT주',['조','10km','목표 페이스','8km 시간','참고 범위','']],
+    mixed:['3000m / 2000m / 1000m 복합',['조','10km','3000m','2000m','1000m','회복 km']],
+    wed400:['400m × 10',['조','10km','400m 질주','200m 회복','질주 km','회복 km']],
+    wed1000:['1000m × 5',['조','10km','1000m 질주','200m 회복','질주 km','회복 km']],
+    wed1200:['1200m × 5',['조','10km','1200m 질주','200m 회복','질주 km','회복 km']],
+    wed1600:['1600m × 5',['조','10km','1600m 질주','200m 회복','질주 km','회복 km']],
+    buildup12:['12km 빌드업',['조','10km','1~5km','6~10km','11km','12km','총시간']],
+    buildup20:['20km 빌드업',['조','10km','1~10km','11~15km','16~20km','총시간']],
+    long18:['18km 롱런',['조','10km','목표 페이스','18km 예상시간','마지막 5km','']],
+    long32:['32km 롱런',['조','10km','목표 페이스','32km 예상시간','마지막 5km','']]
+  };
+  return map[type]||map.basic300;
+}
+
+async function makeAllGroupsCanvas(){
+  const {groups,ge}=getCurrentGroups();
+  if(!groups.length){ alert('먼저 조별 기록을 입력해 주세요.'); throw new Error('no groups'); }
+
+  const type=$('allGroupShareType').value;
+  const [title,headers]=allGroupTypeMeta(type);
+  const rows=allGroupRowsByType(type,groups);
+  const temp=Number($('gTempC').value)||20, rh=Number($('gRh').value)||60;
+
+  $('shareStage').innerHTML=`
+    <div id="allGroupsShareCard" class="all-groups-share-card">
+      <div class="title">
+        <h1>${title}</h1>
+        <p>조별 훈련 페이스 · ${groups.length}개 조</p>
+      </div>
+      <div class="envline">
+        기온 ${temp.toFixed(1)}℃ · 습도 ${rh}% · 이슬점 ${ge.dp.toFixed(1)}℃ ·
+        환경 보정 <b>+${ge.sec}초/km</b>
+      </div>
+      <table>
+        <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td${i===0?' style="font-weight:900;color:#0b3b78"':''}>${v}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+  if(typeof html2canvas!=='function'){
+    alert('이미지 변환 모듈을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.');
+    throw new Error('html2canvas unavailable');
+  }
+  return await html2canvas($('allGroupsShareCard'),{scale:1.5,backgroundColor:'#ffffff',useCORS:true});
+}
+
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function canvasToBlobAsync(canvas){
+  return new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+}
+async function deliverImage(canvas, filename, title){
+  const blob=await canvasToBlobAsync(canvas);
+  if(!blob) throw new Error('PNG 생성 실패');
+  const file=new File([blob],filename,{type:'image/png'});
+
+  // iPhone/iPad Safari에서는 download 링크보다 공유 시트가 안정적이다.
+  if(isIOS() && navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    await navigator.share({title:title||filename,files:[file]});
+    return;
+  }
+
+  const url=URL.createObjectURL(blob);
+  if(isIOS()){
+    // 공유 API 미지원 iOS에서는 이미지를 새 화면에 열어 길게 눌러 저장 가능하게 한다.
+    const w=window.open(url,'_blank');
+    if(!w) location.href=url;
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return;
+  }
+
+  const a=document.createElement('a');
+  a.href=url; a.download=filename; a.style.display='none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+async function saveAllGroupsImage(){
+  try{
+    const canvas=await makeAllGroupsCanvas();
+    const [title]=allGroupTypeMeta($('allGroupShareType').value);
+    const filename=`조별_${title.replace(/[^\w가-힣]+/g,'_')}.png`;
+    await deliverImage(canvas,filename,`조별 ${title}`);
+  }catch(e){
+    if(e && e.name!=='AbortError'){
+      console.error(e);
+      alert('이미지 저장/공유 중 오류가 발생했습니다.');
+    }
+  }
+}
+
+async function shareAllGroupsImage(){
+  try{
+    const canvas=await makeAllGroupsCanvas();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    const [title]=allGroupTypeMeta($('allGroupShareType').value);
+    const file=new File([blob],`조별_${title.replace(/[^\\w가-힣]+/g,'_')}.png`,{type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({title:`조별 ${title}`,text:`${title} 조별 훈련표`,files:[file]});
+    }else{
+      const a=document.createElement('a');
+      a.download=file.name; a.href=URL.createObjectURL(blob); a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      alert('이미지를 저장했습니다. 갤러리/파일에서 공유해 주세요.');
+    }
+  }catch(e){ if(e && e.name!=='AbortError') console.error(e); }
+}
+
+buildGroupInputs();
+$('addGroupBtn').addEventListener('click',addGroup);
+$('saveAllGroupsImageBtn').addEventListener('click',saveAllGroupsImage);
+$('shareAllGroupsImageBtn').addEventListener('click',shareAllGroupsImage);
+['min','sec','tempC','rh'].forEach(id=>$(id).addEventListener('input',calcPersonal));
+['gTempC','gRh'].forEach(id=>$(id).addEventListener('input',calcGroups));
+calcPersonal();
+calcGroups();
+</script>
+<div id="shareStage"></div>
+</body>
+</html>
