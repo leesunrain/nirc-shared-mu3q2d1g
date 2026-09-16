@@ -149,7 +149,7 @@ tr:last-child td{border-bottom:0}
 <body>
 <header>
   <h1>마라톤 훈련 페이스 계산기</h1>
-  <p>개인별 계산 · 조별 계산</p>
+  <p>개인별 계산 · 조별 계산 <span class="badge" style="background:#fff;color:#0b3b78;margin-left:8px">최신판 2026.09.17 · Cruise T/VDOT</span></p>
 </header>
 
 <div class="wrap">
@@ -304,6 +304,25 @@ function t(sec){sec=Math.round(sec);let h=Math.floor(sec/3600);sec%=3600;let m=M
 function lap(sec){return `${t(sec)} (${Math.round(sec)}초)`;}
 function mround(x,m){return Math.round(x/m)*m;}
 
+/* Daniels/Gilbert VDOT: 최근 10K PB -> VDOT -> T pace.
+   T speed is derived at 88% of VDOT; cruise distance/volume adjustments are then added. */
+function vdotFromRace(distanceM, timeSec){
+  const tm=timeSec/60, v=distanceM/tm;
+  const vo2=-4.60 + 0.182258*v + 0.000104*v*v;
+  const pct=0.8 + 0.1894393*Math.exp(-0.012778*tm) + 0.2989558*Math.exp(-0.1932605*tm);
+  return vo2/pct;
+}
+function paceFromVO2(targetVO2){
+  // 0.000104*v^2 + 0.182258*v - (4.60 + targetVO2) = 0
+  const a=0.000104,b=0.182258,c=-(4.60+targetVO2);
+  const v=(-b+Math.sqrt(b*b-4*a*c))/(2*a);
+  return 60000/v; // sec/km
+}
+function thresholdPaceFrom10k(timeSec){
+  const vdot=vdotFromRace(10000,timeSec);
+  return {vdot, pace:paceFromVO2(vdot*0.88)};
+}
+
 /* 환경 보정:
    - Magnus 근사식으로 이슬점 계산
    - 이슬점 기반의 보수적 훈련 페이스 보정
@@ -367,16 +386,24 @@ function dataFor(T1, env=0){
   let offset=T1>3000?22:18;
   let run400=mround((p-offset)*.4,2), rec200=round((p+75)*.2);
   let run800=(p-8)*.8, rec800=(p+110)*.2;
-  let lt=p+10, ltRecP=p+85, ltRec=(p+85)*.2;
+  const th=thresholdPaceFrom10k(T1);
+  // Cruise 공식: 10K PB -> VDOT -> T. 환경보정은 최종 훈련 페이스에만 추가.
+  const tBase=th.pace;
+  const cruise1600=tBase + env;          // 1600m: T
+  const cruise2000=tBase + 2 + env;      // 2000m: T+2초/km
+  const cruise3000=tBase + 2 + env;      // 3000m×3(총 9km): T+2초/km
+  const lt=cruise3000;
+  const ltRecP=600;                       // 200m / 약 2분 = 10:00/km easy jog
+  const ltRec=120;
   let mixRec100=(p+30)*.1;
   let commonRec=(p+110)*.2;
   let pyr=[400,800,1200,1600,1200,800,400];
   let pyrText=pyr.map(d=>`${d}m ${t((p-5)*(d/1000))}`).join(' · ');
 
-  return {T1,p0,p,env,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText};
+  return {T1,p0,p,env,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,vdot:th.vdot,tBase,cruise1600,cruise2000,cruise3000,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText};
 }
 function renderAll(d){
-  let {T1,p0,p,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText}=d;
+  let {T1,p0,p,half,full,s100,run300,rec100,offset,run400,rec200,run800,rec800,vdot,tBase,cruise1600,cruise2000,cruise3000,lt,ltRecP,ltRec,mixRec100,commonRec,pyrText}=d;
 
   const race=`<table><thead><tr><th>항목</th><th>결과</th><th>계산</th></tr></thead><tbody>
     <tr><td>10km 입력 기록</td><td class="value">${t(T1)}</td><td>기준</td></tr>
@@ -416,17 +443,18 @@ function renderAll(d){
     ]);
 
   const ltCruise=`<div class="grid2">
-    ${card('공통 공식',[
-      ['LT 페이스',pace(lt),'10km 페이스 +10초/km'],
-      ['200m 휴식 km 페이스',pace(ltRecP)],
-      ['200m 휴식 시간',lap(ltRec)]
+    ${card('공통 공식 · VDOT 기반',[
+      ['VDOT',vdot.toFixed(1),'현재 10K PB로 산출'],
+      ['Threshold(T)',pace(tBase),'VDOT T 기준 · 환경보정 전'],
+      ['회복','200m Easy Jog ≈ 2:00','완전 정지보다 가벼운 조깅 기본'],
+      ['계산 순서','10K PB → VDOT → T → 거리/총량 보정 → 환경보정']
     ])}
     ${card('세트별 구성',[
-      ['3000m × 3',`${lap(lt*3)} × 3`,`총 LT ${t(lt*3*3)}`],
-      ['2000m × 5',`${lap(lt*2)} × 5`,`총 LT ${t(lt*2*5)}`],
-      ['1600m × 6',`${lap(lt*1.6)} × 6`,`총 LT ${t(lt*1.6*6)}`]
+      ['3000m × 3',`${pace(cruise3000)} · ${lap(cruise3000*3)} × 3`,`T+2초/km · 총 9km`],
+      ['2000m × 5',`${pace(cruise2000)} · ${lap(cruise2000*2)} × 5`,`T+2초/km · 총 10km`],
+      ['1600m × 6',`${pace(cruise1600)} · ${lap(cruise1600*1.6)} × 6`,`T 기준 · 총 9.6km`]
     ])}
-  </div>`;
+  </div><p class="note" style="padding:0 2px">※ 3000m 반복을 4~5회(총 12~15km)로 늘릴 경우 T+4~5초/km처럼 더 보수적으로 조정하는 것을 우선합니다. 현재 앱의 3000m × 3은 T+2초/km입니다.</p>`;
 
   const tempo=card('8000m LT주',[
     ['목표 페이스',pace(p+15),'HMP 전후'],
@@ -657,9 +685,9 @@ function allGroupRowsByType(type, groups){
       const rec=((d.p/10)*2.05)*2;
       rows.push([g.name,t(d.T1),t(d.p-12),t(rec),pace(d.p-12),pace(rec*5)]);
     }else if(type==='lt3000'){
-      rows.push([g.name,t(d.T1),pace(d.lt),t(d.lt*3),'3세트',t(d.lt*3*3)]);
+      rows.push([g.name,t(d.T1),pace(d.cruise3000),t(d.cruise3000*3),'3세트',t(d.cruise3000*3*3)]);
     }else if(type==='lt'){
-      rows.push([g.name,t(d.T1),pace(d.lt),t(d.lt*3),t(d.lt*2),t(d.lt*1.6)]);
+      rows.push([g.name,t(d.T1),pace(d.tBase),t(d.cruise3000*3),t(d.cruise2000*2),t(d.cruise1600*1.6)]);
     }else if(type==='tempo'){
       rows.push([g.name,t(d.T1),pace(d.p+15),t((d.p+15)*8),`${pace(d.p+12)} ~ ${pace(d.p+18)}`,'-']);
     }else if(type==='mixed'){
@@ -695,8 +723,8 @@ function allGroupTypeMeta(type){
     basic400:['400m / 200m 인터벌',['조','10km','400m 질주','200m 휴식','질주 km','회복 km']],
     basic800:['800m / 200m 인터벌',['조','10km','800m 질주','200m 휴식','질주 km','회복 km']],
     basic1000:['1000m / 200m 인터벌',['조','10km','1000m 질주','200m 휴식','질주 km','회복 km']],
-    lt3000:['3000m × 3 크루즈',['조','10km','LT 페이스','3000m 랩','세트','총 LT 시간']],
-    lt:['LT 크루즈 인터벌',['조','10km','LT 페이스','3000m','2000m','1600m']],
+    lt3000:['3000m × 3 크루즈 · VDOT T+2',['조','10km','크루즈 페이스','3000m 랩','세트','총 크루즈 시간']],
+    lt:['LT 크루즈 인터벌 · VDOT 기반',['조','10km','VDOT T','3000m(T+2)','2000m(T+2)','1600m(T)']],
     tempo:['8000m LT주',['조','10km','목표 페이스','8km 시간','참고 범위','']],
     mixed:['3000m / 2000m / 1000m 복합',['조','10km','3000m','2000m','1000m','회복 km']],
     wed400:['400m × 10',['조','10km','400m 질주','200m 회복','질주 km','회복 km']],
