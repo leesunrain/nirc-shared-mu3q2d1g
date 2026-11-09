@@ -149,7 +149,7 @@ tr:last-child td{border-bottom:0}
 <body>
 <header>
   <h1>마라톤 훈련 페이스 계산기</h1>
-  <p>개인별 계산 · 조별 계산 <span class="badge" style="background:#fff;color:#0b3b78;margin-left:8px">최신판 2026.09.17 · Cruise T/VDOT</span></p>
+  <p>개인별 계산 · 조별 계산 <span class="badge" style="background:#fff;color:#0b3b78;margin-left:8px">버전 2026.11.10 · 복합 인터벌 회복 수정</span></p>
 </header>
 
 <div class="wrap">
@@ -395,7 +395,7 @@ function dataFor(T1, env=0){
   const lt=cruise3000;
   const ltRecP=600;                       // 200m / 약 2분 = 10:00/km easy jog
   const ltRec=120;
-  let mixRec100=(p+30)*.1;
+  let mixRec100=(p0+85)*.1; // 복합 인터벌 회복: 10K PB + 1분25초/km (환경보정 미적용)
   let commonRec=(p+110)*.2;
   let pyr=[400,800,1200,1600,1200,800,400];
   let pyrText=pyr.map(d=>`${d}m ${t((p-5)*(d/1000))}`).join(' · ');
@@ -464,9 +464,9 @@ function renderAll(d){
   ]);
 
   const mixed=`<table><thead><tr><th>세그먼트</th><th>질주 km 페이스</th><th>질주 시간</th><th>휴식</th><th>휴식 페이스</th><th>휴식 시간</th></tr></thead><tbody>
-    <tr><td>3000m</td><td class="value">${pace(p+10)}</td><td>${t((p+10)*3)}</td><td>600m</td><td>${pace(p+30)}</td><td>${t(mixRec100*6)}</td></tr>
-    <tr><td>2000m</td><td class="value">${pace(p)}</td><td>${t(p*2)}</td><td>400m</td><td>${pace(p+30)}</td><td>${t(mixRec100*4)}</td></tr>
-    <tr><td>1000m</td><td class="value">${pace(p-10)}</td><td>${t(p-10)}</td><td>200m</td><td>${pace(p+30)}</td><td>${t(mixRec100*2)}</td></tr>
+    <tr><td>3000m</td><td class="value">${pace(p+10)}</td><td>${t((p+10)*3)}</td><td>600m</td><td>${pace(p0+85)}</td><td>${t(mixRec100*6)}</td></tr>
+    <tr><td>2000m</td><td class="value">${pace(p)}</td><td>${t(p*2)}</td><td>400m</td><td>${pace(p0+85)}</td><td>${t(mixRec100*4)}</td></tr>
+    <tr><td>1000m</td><td class="value">${pace(p-10)}</td><td>${t(p-10)}</td><td>200m</td><td>${pace(p0+85)}</td><td>${t(mixRec100*2)}</td></tr>
   </tbody></table>`;
 
   const wed=`<div class="grid3">
@@ -691,7 +691,7 @@ function allGroupRowsByType(type, groups){
     }else if(type==='tempo'){
       rows.push([g.name,t(d.T1),pace(d.p+15),t((d.p+15)*8),`${pace(d.p+12)} ~ ${pace(d.p+18)}`,'-']);
     }else if(type==='mixed'){
-      rows.push([g.name,t(d.T1),`${t((d.p+10)*3)}`,`${t(d.p*2)}`,`${t(d.p-10)}`,pace(d.p+30)]);
+      rows.push([g.name,t(d.T1),`${t((d.p+10)*3)}`,`${t(d.p*2)}`,`${t(d.p-10)}`,pace(d.p0+85)]);
     }else if(type==='wed400'){
       rows.push([g.name,t(d.T1),t((d.p-8)*.4),t(d.commonRec),pace(d.p-8),pace(d.p+110)]);
     }else if(type==='wed1000'){
